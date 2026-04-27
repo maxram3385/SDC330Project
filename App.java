@@ -1,246 +1,296 @@
 /*
-Name: Max Ramos
-Date: April 2026
-SDC330 Week 3 Course Project - Class Implementation
-
-Runs the aquarium maintenance console application.
-The program allows the user to create, view, search, update, and delete customer account records.
-*/
+ * Name: Max Ramos
+ * Date: April 26, 2026
+ * Assignment: Week 3 Project - Employee Management Application
+ * Purpose: Main application file that allows the user to manage employees
+ * through a console-based menu system. This version demonstrates abstraction,
+ * constructors, access specifiers, composition, and polymorphism.
+ */
 
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class App {
-    private static ArrayList<Account> accounts = new ArrayList<>();
-    private static Scanner input = new Scanner(System.in);
-    private static int nextAccountId = 1;
-    private static int nextTankId = 1;
-
     public static void main(String[] args) {
-        loadSampleAccounts();
+        Scanner scanner = new Scanner(System.in);
+        ArrayList<Employee> employees = new ArrayList<>();
+
+        // These objects instantiate each employee subclass with realistic sample information.
+        // Each employee also receives a Department object, which demonstrates composition.
+        employees.add(new HourlyEmployee(
+                101, "John", "Smith",
+                new Department("Sales", "Building A"),
+                18.50, 40
+        ));
+
+        employees.add(new SalariedEmployee(
+                102, "Sarah", "Jones",
+                new Department("Human Resources", "Building B"),
+                55000
+        ));
+
+        employees.add(new CommissionEmployee(
+                103, "Mike", "Brown",
+                new Department("Marketing", "Building C"),
+                700.00, 0.10, 5000
+        ));
 
         int choice;
 
+        System.out.println("==================================================");
+        System.out.println("Project Week 3 - Employee Management Application");
+        System.out.println("By Max Ramos");
+        System.out.println("==================================================");
+        System.out.println("Welcome to the Employee Management Application.");
+        System.out.println("Use the menu below to add, remove, update, display,");
+        System.out.println("and calculate employee pay information.");
+        System.out.println("This version demonstrates abstraction, constructors,");
+        System.out.println("access specifiers, inheritance, composition, and polymorphism.");
+
         do {
-            displayMenu();
-            choice = getIntInput("Enter your choice: ");
+            System.out.println("\n================ MENU ================");
+            System.out.println("1. Add Employee");
+            System.out.println("2. Remove Employee");
+            System.out.println("3. Update Employee");
+            System.out.println("4. Display All Employees");
+            System.out.println("5. Display Employees by Type");
+            System.out.println("6. Display Employee Pay");
+            System.out.println("7. Exit");
+
+            choice = getIntInput(scanner, "Enter your choice: ");
 
             switch (choice) {
                 case 1:
-                    addCustomerAccount();
+                    addEmployee(scanner, employees);
                     break;
                 case 2:
-                    viewAllAccounts();
+                    removeEmployee(scanner, employees);
                     break;
                 case 3:
-                    searchAccount();
+                    updateEmployee(scanner, employees);
                     break;
                 case 4:
-                    updateAccount();
+                    displayAllEmployees(employees);
                     break;
                 case 5:
-                    deleteAccount();
+                    displayEmployeesByType(scanner, employees);
                     break;
                 case 6:
-                    System.out.println("Exiting Aquarium Maintenance App. Goodbye!");
+                    displayEmployeePay(employees);
+                    break;
+                case 7:
+                    System.out.println("Thank you for using the Employee Management Application. Goodbye.");
                     break;
                 default:
-                    System.out.println("Invalid choice. Please try again.");
+                    System.out.println("Invalid choice. Please enter a number from 1 to 7.");
             }
 
-        } while (choice != 6);
+        } while (choice != 7);
+
+        scanner.close();
     }
 
-    public static void displayMenu() {
-        System.out.println("\n=== Aquarium Maintenance Account Manager ===");
-        System.out.println("1. Add Customer Account");
-        System.out.println("2. View All Accounts");
-        System.out.println("3. Search Account by Customer Name");
-        System.out.println("4. Update Account Service Hours");
-        System.out.println("5. Delete Account");
-        System.out.println("6. Exit");
+    /*
+     * This method is private because it is only used inside the App class.
+     * This demonstrates access specifiers by not exposing helper methods publicly.
+     */
+    private static void addEmployee(Scanner scanner, ArrayList<Employee> employees) {
+        int id = getIntInput(scanner, "Enter employee ID: ");
+
+        System.out.print("Enter first name: ");
+        String firstName = scanner.nextLine();
+
+        System.out.print("Enter last name: ");
+        String lastName = scanner.nextLine();
+
+        System.out.print("Enter department name: ");
+        String deptName = scanner.nextLine();
+
+        System.out.print("Enter department location: ");
+        String deptLocation = scanner.nextLine();
+
+        // Constructor creates a Department object that will become part of the Employee object.
+        Department department = new Department(deptName, deptLocation);
+
+        System.out.println("Choose employee type:");
+        System.out.println("1. Hourly");
+        System.out.println("2. Salaried");
+        System.out.println("3. Commission");
+
+        int typeChoice = getIntInput(scanner, "Enter choice: ");
+
+        switch (typeChoice) {
+            case 1:
+                double hourlyRate = getDoubleInput(scanner, "Enter hourly rate: ");
+                double hoursWorked = getDoubleInput(scanner, "Enter hours worked: ");
+
+                employees.add(new HourlyEmployee(id, firstName, lastName, department, hourlyRate, hoursWorked));
+                System.out.println("Hourly employee added successfully.");
+                break;
+
+            case 2:
+                double annualSalary = getDoubleInput(scanner, "Enter annual salary: ");
+
+                employees.add(new SalariedEmployee(id, firstName, lastName, department, annualSalary));
+                System.out.println("Salaried employee added successfully.");
+                break;
+
+            case 3:
+                double basePay = getDoubleInput(scanner, "Enter base pay: ");
+                double commissionRate = getDoubleInput(scanner, "Enter commission rate: ");
+                double salesAmount = getDoubleInput(scanner, "Enter sales amount: ");
+
+                employees.add(new CommissionEmployee(id, firstName, lastName, department, basePay, commissionRate, salesAmount));
+                System.out.println("Commission employee added successfully.");
+                break;
+
+            default:
+                System.out.println("Invalid employee type. Employee was not added.");
+        }
     }
 
-    public static void loadSampleAccounts() {
-        addSampleAccount("Smiley's HVAC", "757-555-1101", "service@smileyshvac.com",
-                "Patrick David", "Monthly", 1.5,
-                "Saltwater Fish Only", 75);
+    private static void removeEmployee(Scanner scanner, ArrayList<Employee> employees) {
+        int id = getIntInput(scanner, "Enter employee ID to remove: ");
 
-        addSampleAccount("Lyn Primo", "757-555-2202", "lyn.primo@email.com",
-                "Max Ramos", "Weekly", 2.0,
-                "Freshwater Planted", 55);
+        Employee employeeToRemove = null;
 
-        addSampleAccount("Michelle Joseph", "757-555-3303", "michelle.joseph@email.com",
-                "David Schlamee", "Monthly", 1.0,
-                "Freshwater Planted", 40);
+        for (Employee employee : employees) {
+            if (employee.getEmployeeId() == id) {
+                employeeToRemove = employee;
+                break;
+            }
+        }
 
-        addSampleAccount("Ashlee Marvelle", "757-555-4404", "ashlee.marvelle@email.com",
-                "Max Ramos", "Weekly", 2.5,
-                "Saltwater Reef", 90);
-
-        addSampleAccount("Cure Coffeehouse", "757-555-5505", "contact@curecoffeehouse.com",
-                "Patrick David", "Quarterly", 3.0,
-                "Saltwater Reef", 125);
+        if (employeeToRemove != null) {
+            employees.remove(employeeToRemove);
+            System.out.println("Employee removed successfully.");
+        } else {
+            System.out.println("Employee not found.");
+        }
     }
 
-    public static void addSampleAccount(String customerName, String phoneNumber, String email,
-                                        String assignedWorker, String serviceFrequency,
-                                        double serviceHours, String tankType, double tankSize) {
-        Tank tank = new Tank(nextTankId, tankType, tankSize);
+    private static void updateEmployee(Scanner scanner, ArrayList<Employee> employees) {
+        int id = getIntInput(scanner, "Enter employee ID to update: ");
 
-        CustomerAccount customerAccount = new CustomerAccount(
-                nextAccountId,
-                customerName,
-                phoneNumber,
-                email,
-                assignedWorker,
-                serviceFrequency,
-                serviceHours,
-                tank
-        );
+        Employee employeeToUpdate = null;
 
-        accounts.add(customerAccount);
+        for (Employee employee : employees) {
+            if (employee.getEmployeeId() == id) {
+                employeeToUpdate = employee;
+                break;
+            }
+        }
 
-        nextAccountId++;
-        nextTankId++;
-    }
-
-    public static void addCustomerAccount() {
-        System.out.println("\n--- Add Customer Account ---");
-
-        System.out.print("Customer Name: ");
-        String customerName = input.nextLine();
-
-        System.out.print("Phone Number: ");
-        String phoneNumber = input.nextLine();
-
-        System.out.print("Email: ");
-        String email = input.nextLine();
-
-        System.out.print("Assigned Worker: ");
-        String assignedWorker = input.nextLine();
-
-        System.out.print("Service Frequency: ");
-        String serviceFrequency = input.nextLine();
-
-        double serviceHours = getDoubleInput("Service Hours: ");
-
-        System.out.print("Tank Type: ");
-        String tankType = input.nextLine();
-
-        double tankSize = getDoubleInput("Tank Size in Gallons: ");
-
-        Tank tank = new Tank(nextTankId, tankType, tankSize);
-
-        CustomerAccount customerAccount = new CustomerAccount(
-                nextAccountId,
-                customerName,
-                phoneNumber,
-                email,
-                assignedWorker,
-                serviceFrequency,
-                serviceHours,
-                tank
-        );
-
-        accounts.add(customerAccount);
-
-        nextAccountId++;
-        nextTankId++;
-
-        System.out.println("Customer account added successfully.");
-    }
-
-    public static void viewAllAccounts() {
-        System.out.println("\n--- All Customer Accounts ---");
-
-        if (accounts.isEmpty()) {
-            System.out.println("No customer accounts found.");
+        if (employeeToUpdate == null) {
+            System.out.println("Employee not found.");
             return;
         }
 
-        // Polymorphism is demonstrated here because CustomerAccount objects
-        // are stored and processed as Account objects.
-        for (Account account : accounts) {
-            System.out.println("\n-----------------------------");
-            System.out.println(account.getSummary());
+        System.out.print("Enter new first name: ");
+        String firstName = scanner.nextLine();
+
+        System.out.print("Enter new last name: ");
+        String lastName = scanner.nextLine();
+
+        System.out.print("Enter new department name: ");
+        String deptName = scanner.nextLine();
+
+        System.out.print("Enter new department location: ");
+        String deptLocation = scanner.nextLine();
+
+        employeeToUpdate.setFirstName(firstName);
+        employeeToUpdate.setLastName(lastName);
+        employeeToUpdate.setDepartment(new Department(deptName, deptLocation));
+
+        System.out.println("Employee updated successfully.");
+    }
+
+    private static void displayAllEmployees(ArrayList<Employee> employees) {
+        if (employees.isEmpty()) {
+            System.out.println("No employees to display.");
+            return;
+        }
+
+        for (Employee employee : employees) {
+            System.out.println("----------------------------------");
+            System.out.println(employee);
         }
     }
 
-    public static void searchAccount() {
-        System.out.println("\n--- Search Account ---");
-        System.out.print("Enter customer name to search: ");
-        String searchName = input.nextLine();
+    private static void displayEmployeesByType(Scanner scanner, ArrayList<Employee> employees) {
+        System.out.println("Display which type?");
+        System.out.println("1. Hourly");
+        System.out.println("2. Salaried");
+        System.out.println("3. Commission");
+
+        int choice = getIntInput(scanner, "Enter choice: ");
 
         boolean found = false;
 
-        for (Account account : accounts) {
-            if (account.getCustomerName().equalsIgnoreCase(searchName)) {
-                System.out.println("\nAccount Found:");
-                System.out.println(account.getSummary());
+        for (Employee employee : employees) {
+            if ((choice == 1 && employee instanceof HourlyEmployee) ||
+                (choice == 2 && employee instanceof SalariedEmployee) ||
+                (choice == 3 && employee instanceof CommissionEmployee)) {
+                System.out.println("----------------------------------");
+                System.out.println(employee);
                 found = true;
             }
         }
 
         if (!found) {
-            System.out.println("No account found with that customer name.");
+            System.out.println("No employees of that type found.");
         }
     }
 
-    public static void updateAccount() {
-        System.out.println("\n--- Update Account Service Hours ---");
-        int accountId = getIntInput("Enter account ID to update: ");
-
-        for (Account account : accounts) {
-            if (account.getAccountId() == accountId && account instanceof CustomerAccount) {
-                CustomerAccount customerAccount = (CustomerAccount) account;
-
-                double newServiceHours = getDoubleInput("Enter new service hours: ");
-                customerAccount.setServiceHours(newServiceHours);
-
-                System.out.println("Account service hours updated successfully.");
-                return;
-            }
+    private static void displayEmployeePay(ArrayList<Employee> employees) {
+        if (employees.isEmpty()) {
+            System.out.println("No employees to display.");
+            return;
         }
 
-        System.out.println("No account found with that ID.");
-    }
+        System.out.println("\nEmployee Payment Information");
+        System.out.println("==========================================");
 
-    public static void deleteAccount() {
-        System.out.println("\n--- Delete Account ---");
-        int accountId = getIntInput("Enter account ID to delete: ");
-
-        for (int i = 0; i < accounts.size(); i++) {
-            if (accounts.get(i).getAccountId() == accountId) {
-                accounts.remove(i);
-                System.out.println("Account deleted successfully.");
-                return;
-            }
+        /*
+         * Polymorphism is shown here.
+         * The ArrayList stores Employee references, but the correct calculatePay()
+         * method runs depending on whether the object is hourly, salaried, or commission.
+         */
+        for (Employee employee : employees) {
+            System.out.println("----------------------------------");
+            System.out.println(employee.getFirstName() + " " + employee.getLastName());
+            System.out.println("Type: " + employee.getEmployeeType());
+            System.out.println("Pay this period: $" + String.format("%.2f", employee.calculatePay()));
         }
-
-        System.out.println("No account found with that ID.");
     }
 
-    public static int getIntInput(String prompt) {
+    /*
+     * This private helper method improves input validation.
+     * It keeps the program from crashing if the user enters text instead of a number.
+     */
+    private static int getIntInput(Scanner scanner, String prompt) {
         while (true) {
+            System.out.print(prompt);
+
             try {
-                System.out.print(prompt);
-                int value = Integer.parseInt(input.nextLine());
-                return value;
+                return Integer.parseInt(scanner.nextLine());
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid whole number.");
+                System.out.println("Invalid input. Please enter a whole number.");
             }
         }
     }
 
-    public static double getDoubleInput(String prompt) {
+    /*
+     * This private helper method validates decimal number input.
+     */
+    private static double getDoubleInput(Scanner scanner, String prompt) {
         while (true) {
+            System.out.print(prompt);
+
             try {
-                System.out.print(prompt);
-                double value = Double.parseDouble(input.nextLine());
-                return value;
+                return Double.parseDouble(scanner.nextLine());
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid number.");
+                System.out.println("Invalid input. Please enter a valid number.");
             }
         }
     }
