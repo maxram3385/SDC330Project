@@ -1,7 +1,8 @@
 /*
 Name: Max Ramos
-Date: April 2026
-SDC330 Week 3 Course Project - Class Implementation
+Date: May 2, 2026
+SDC330 Week 4 Course Project - Database Support
+
 Represents a customer account for an aquarium maintenance business.
 This class extends Account, implements Serviceable, and uses composition by containing a Tank object.
 */
@@ -78,8 +79,8 @@ public class CustomerAccount extends Account implements Serviceable {
         return "Assigned Worker: " + assignedWorker +
                 "\nService Frequency: " + serviceFrequency +
                 "\nService Hours: " + serviceHours +
-                "\nHourly Rate: $" + getHourlyRate() +
-                "\nEstimated Service Cost: $" + calculateServiceCost();
+                "\nHourly Rate: $" + String.format("%.2f", getHourlyRate()) +
+                "\nEstimated Service Cost: $" + String.format("%.2f", calculateServiceCost());
     }
 
     @Override

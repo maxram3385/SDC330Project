@@ -1,7 +1,7 @@
 /*
 Name: Max Ramos
-Date: April 2026
-SDC330 Week 3 Course Project - Class Implementation
+Date: May 2, 2026
+SDC330 Week 4 Course Project - Database Support
 Stores shared account information for customer accounts.
 */
 

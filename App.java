@@ -1,23 +1,34 @@
 /*
 Name: Max Ramos
-Date: April 2026
-SDC330 Week 3 Course Project - Class Implementation
+Date: May 2, 2026
+SDC330 Week 4 Course Project - Database Support
 
 Runs the aquarium maintenance console application.
-The program allows the user to create, view, search, update, and delete customer account records.
+The program allows the user to create, view, search, update, and delete customer account records
+using a SQLite database.
 */
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class App {
-    private static ArrayList<Account> accounts = new ArrayList<>();
+    private static final String DATABASE_NAME = "aquarium_maintenance.db";
     private static Scanner input = new Scanner(System.in);
-    private static int nextAccountId = 1;
-    private static int nextTankId = 1;
+    private static CustomerAccountDAO dao;
 
     public static void main(String[] args) {
-        loadSampleAccounts();
+        Connection conn = SQLiteDatabase.connect(DATABASE_NAME);
+
+        if (conn == null) {
+            System.out.println("Could not connect to the database. Program ending.");
+            return;
+        }
+
+        dao = new CustomerAccountDAO(conn);
+        dao.createTables();
+        dao.seedSampleData();
 
         int choice;
 
@@ -49,6 +60,12 @@ public class App {
             }
 
         } while (choice != 6);
+
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            System.out.println("Error closing database connection: " + e.getMessage());
+        }
     }
 
     public static void displayMenu() {
@@ -59,50 +76,6 @@ public class App {
         System.out.println("4. Update Account Service Hours");
         System.out.println("5. Delete Account");
         System.out.println("6. Exit");
-    }
-
-    public static void loadSampleAccounts() {
-        addSampleAccount("Smiley's HVAC", "757-555-1101", "service@smileyshvac.com",
-                "Patrick David", "Monthly", 1.5,
-                "Saltwater Fish Only", 75);
-
-        addSampleAccount("Lyn Primo", "757-555-2202", "lyn.primo@email.com",
-                "Max Ramos", "Weekly", 2.0,
-                "Freshwater Planted", 55);
-
-        addSampleAccount("Michelle Joseph", "757-555-3303", "michelle.joseph@email.com",
-                "David Schlamee", "Monthly", 1.0,
-                "Freshwater Planted", 40);
-
-        addSampleAccount("Ashlee Marvelle", "757-555-4404", "ashlee.marvelle@email.com",
-                "Max Ramos", "Weekly", 2.5,
-                "Saltwater Reef", 90);
-
-        addSampleAccount("Cure Coffeehouse", "757-555-5505", "contact@curecoffeehouse.com",
-                "Patrick David", "Quarterly", 3.0,
-                "Saltwater Reef", 125);
-    }
-
-    public static void addSampleAccount(String customerName, String phoneNumber, String email,
-                                        String assignedWorker, String serviceFrequency,
-                                        double serviceHours, String tankType, double tankSize) {
-        Tank tank = new Tank(nextTankId, tankType, tankSize);
-
-        CustomerAccount customerAccount = new CustomerAccount(
-                nextAccountId,
-                customerName,
-                phoneNumber,
-                email,
-                assignedWorker,
-                serviceFrequency,
-                serviceHours,
-                tank
-        );
-
-        accounts.add(customerAccount);
-
-        nextAccountId++;
-        nextTankId++;
     }
 
     public static void addCustomerAccount() {
@@ -130,10 +103,10 @@ public class App {
 
         double tankSize = getDoubleInput("Tank Size in Gallons: ");
 
-        Tank tank = new Tank(nextTankId, tankType, tankSize);
+        Tank tank = new Tank(0, tankType, tankSize);
 
         CustomerAccount customerAccount = new CustomerAccount(
-                nextAccountId,
+                0,
                 customerName,
                 phoneNumber,
                 email,
@@ -143,24 +116,20 @@ public class App {
                 tank
         );
 
-        accounts.add(customerAccount);
-
-        nextAccountId++;
-        nextTankId++;
-
-        System.out.println("Customer account added successfully.");
+        dao.insertCustomerAccount(customerAccount);
     }
 
     public static void viewAllAccounts() {
         System.out.println("\n--- All Customer Accounts ---");
+
+        ArrayList<CustomerAccount> accounts = dao.getAllCustomerAccounts();
 
         if (accounts.isEmpty()) {
             System.out.println("No customer accounts found.");
             return;
         }
 
-        // Polymorphism is demonstrated here because CustomerAccount objects
-        // are stored and processed as Account objects.
+        // Polymorphism is still demonstrated because CustomerAccount extends Account.
         for (Account account : accounts) {
             System.out.println("\n-----------------------------");
             System.out.println(account.getSummary());
@@ -172,61 +141,53 @@ public class App {
         System.out.print("Enter customer name to search: ");
         String searchName = input.nextLine();
 
-        boolean found = false;
+        ArrayList<CustomerAccount> accounts = dao.searchCustomerAccountsByName(searchName);
 
-        for (Account account : accounts) {
-            if (account.getCustomerName().equalsIgnoreCase(searchName)) {
-                System.out.println("\nAccount Found:");
-                System.out.println(account.getSummary());
-                found = true;
-            }
+        if (accounts.isEmpty()) {
+            System.out.println("No account found with that customer name.");
+            return;
         }
 
-        if (!found) {
-            System.out.println("No account found with that customer name.");
+        for (CustomerAccount account : accounts) {
+            System.out.println("\nAccount Found:");
+            System.out.println(account.getSummary());
         }
     }
 
     public static void updateAccount() {
         System.out.println("\n--- Update Account Service Hours ---");
+
         int accountId = getIntInput("Enter account ID to update: ");
+        double newServiceHours = getDoubleInput("Enter new service hours: ");
 
-        for (Account account : accounts) {
-            if (account.getAccountId() == accountId && account instanceof CustomerAccount) {
-                CustomerAccount customerAccount = (CustomerAccount) account;
+        boolean updated = dao.updateServiceHours(accountId, newServiceHours);
 
-                double newServiceHours = getDoubleInput("Enter new service hours: ");
-                customerAccount.setServiceHours(newServiceHours);
-
-                System.out.println("Account service hours updated successfully.");
-                return;
-            }
+        if (updated) {
+            System.out.println("Account service hours updated successfully.");
+        } else {
+            System.out.println("No account found with that ID.");
         }
-
-        System.out.println("No account found with that ID.");
     }
 
     public static void deleteAccount() {
         System.out.println("\n--- Delete Account ---");
+
         int accountId = getIntInput("Enter account ID to delete: ");
 
-        for (int i = 0; i < accounts.size(); i++) {
-            if (accounts.get(i).getAccountId() == accountId) {
-                accounts.remove(i);
-                System.out.println("Account deleted successfully.");
-                return;
-            }
-        }
+        boolean deleted = dao.deleteCustomerAccount(accountId);
 
-        System.out.println("No account found with that ID.");
+        if (deleted) {
+            System.out.println("Account deleted successfully.");
+        } else {
+            System.out.println("No account found with that ID.");
+        }
     }
 
     public static int getIntInput(String prompt) {
         while (true) {
             try {
                 System.out.print(prompt);
-                int value = Integer.parseInt(input.nextLine());
-                return value;
+                return Integer.parseInt(input.nextLine());
             } catch (NumberFormatException e) {
                 System.out.println("Please enter a valid whole number.");
             }
@@ -237,8 +198,7 @@ public class App {
         while (true) {
             try {
                 System.out.print(prompt);
-                double value = Double.parseDouble(input.nextLine());
-                return value;
+                return Double.parseDouble(input.nextLine());
             } catch (NumberFormatException e) {
                 System.out.println("Please enter a valid number.");
             }
