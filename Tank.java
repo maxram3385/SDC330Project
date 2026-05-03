@@ -1,19 +1,23 @@
 /*
 Name: Max Ramos
-Date: may 2, 2026
-SDC330 Week 4 Course Project - Database Support
-Stores aquarium-specific information for each customer account.
+Date: May 2, 2026
+SDC330 Course Project - Aquarium Maintenance App
+
+Stores aquarium tank information for a customer account.
+This class is used through composition inside CustomerAccount.
 */
 
 public class Tank {
     private int tankId;
     private String tankType;
     private double tankSize;
+    private String waterType;
 
-    public Tank(int tankId, String tankType, double tankSize) {
+    public Tank(int tankId, String tankType, double tankSize, String waterType) {
         this.tankId = tankId;
         this.tankType = tankType;
         this.tankSize = tankSize;
+        this.waterType = waterType;
     }
 
     public int getTankId() {
@@ -36,10 +40,19 @@ public class Tank {
         this.tankSize = tankSize;
     }
 
+    public String getWaterType() {
+        return waterType;
+    }
+
+    public void setWaterType(String waterType) {
+        this.waterType = waterType;
+    }
+
     @Override
     public String toString() {
         return "Tank ID: " + tankId +
                 "\nTank Type: " + tankType +
-                "\nTank Size: " + tankSize + " gallons";
+                "\nTank Size: " + tankSize + " gallons" +
+                "\nWater Type: " + waterType;
     }
 }

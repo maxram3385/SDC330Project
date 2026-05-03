@@ -1,25 +1,32 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
+SDC330 Course Project - Aquarium Maintenance App
 
 Represents a customer account for an aquarium maintenance business.
-This class extends Account, implements Serviceable, and uses composition by containing a Tank object.
+
+This class demonstrates:
+- Inheritance by extending Account
+- Interface implementation by implementing Serviceable
+- Composition by storing a Tank object
+- Encapsulation through private fields and public getters/setters
 */
 
 public class CustomerAccount extends Account implements Serviceable {
     private String assignedWorker;
     private String serviceFrequency;
-    private double serviceHours;
+    private double monthlyPrice;
+    private String maintenanceNotes;
     private Tank tank;
 
     public CustomerAccount(int accountId, String customerName, String phoneNumber, String email,
-                           String assignedWorker, String serviceFrequency, double serviceHours,
-                           Tank tank) {
+                           String assignedWorker, String serviceFrequency, double monthlyPrice,
+                           String maintenanceNotes, Tank tank) {
         super(accountId, customerName, phoneNumber, email);
         this.assignedWorker = assignedWorker;
         this.serviceFrequency = serviceFrequency;
-        this.serviceHours = serviceHours;
+        this.monthlyPrice = monthlyPrice;
+        this.maintenanceNotes = maintenanceNotes;
         this.tank = tank;
     }
 
@@ -39,12 +46,20 @@ public class CustomerAccount extends Account implements Serviceable {
         this.serviceFrequency = serviceFrequency;
     }
 
-    public double getServiceHours() {
-        return serviceHours;
+    public double getMonthlyPrice() {
+        return monthlyPrice;
     }
 
-    public void setServiceHours(double serviceHours) {
-        this.serviceHours = serviceHours;
+    public void setMonthlyPrice(double monthlyPrice) {
+        this.monthlyPrice = monthlyPrice;
+    }
+
+    public String getMaintenanceNotes() {
+        return maintenanceNotes;
+    }
+
+    public void setMaintenanceNotes(String maintenanceNotes) {
+        this.maintenanceNotes = maintenanceNotes;
     }
 
     public Tank getTank() {
@@ -55,32 +70,18 @@ public class CustomerAccount extends Account implements Serviceable {
         this.tank = tank;
     }
 
-    public double getHourlyRate() {
-        String tankType = tank.getTankType();
-
-        if (tankType.equalsIgnoreCase("Freshwater Planted")) {
-            return 80.00;
-        } else if (tankType.equalsIgnoreCase("Saltwater Fish Only")) {
-            return 100.00;
-        } else if (tankType.equalsIgnoreCase("Saltwater Reef")) {
-            return 125.00;
-        } else {
-            return 0.00;
-        }
-    }
-
     @Override
     public double calculateServiceCost() {
-        return getHourlyRate() * serviceHours;
+        return monthlyPrice;
     }
 
     @Override
     public String getServiceDetails() {
         return "Assigned Worker: " + assignedWorker +
                 "\nService Frequency: " + serviceFrequency +
-                "\nService Hours: " + serviceHours +
-                "\nHourly Rate: $" + String.format("%.2f", getHourlyRate()) +
-                "\nEstimated Service Cost: $" + String.format("%.2f", calculateServiceCost());
+                "\nMonthly Price: $" + String.format("%.2f", monthlyPrice) +
+                "\nMaintenance Notes: " + maintenanceNotes +
+                "\nEstimated Monthly Service Cost: $" + String.format("%.2f", calculateServiceCost());
     }
 
     @Override

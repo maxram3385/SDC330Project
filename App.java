@@ -1,11 +1,18 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
+SDC330 Course Project - Aquarium Maintenance App
 
 Runs the aquarium maintenance console application.
-The program allows the user to create, view, search, update, and delete customer account records
-using a SQLite database.
+
+This program allows the user to:
+- Add customer accounts
+- View all customer accounts
+- Search customer accounts
+- Update customer account information
+- Delete customer accounts
+
+The application uses a SQLite database for CRUD operations.
 */
 
 import java.sql.Connection;
@@ -73,7 +80,7 @@ public class App {
         System.out.println("1. Add Customer Account");
         System.out.println("2. View All Accounts");
         System.out.println("3. Search Account by Customer Name");
-        System.out.println("4. Update Account Service Hours");
+        System.out.println("4. Update Customer Account Information");
         System.out.println("5. Delete Account");
         System.out.println("6. Exit");
     }
@@ -96,14 +103,20 @@ public class App {
         System.out.print("Service Frequency: ");
         String serviceFrequency = input.nextLine();
 
-        double serviceHours = getDoubleInput("Service Hours: ");
+        double monthlyPrice = getDoubleInput("Monthly Price: ");
+
+        System.out.print("Maintenance Notes: ");
+        String maintenanceNotes = input.nextLine();
 
         System.out.print("Tank Type: ");
         String tankType = input.nextLine();
 
         double tankSize = getDoubleInput("Tank Size in Gallons: ");
 
-        Tank tank = new Tank(0, tankType, tankSize);
+        System.out.print("Water Type: ");
+        String waterType = input.nextLine();
+
+        Tank tank = new Tank(0, tankType, tankSize, waterType);
 
         CustomerAccount customerAccount = new CustomerAccount(
                 0,
@@ -112,7 +125,8 @@ public class App {
                 email,
                 assignedWorker,
                 serviceFrequency,
-                serviceHours,
+                monthlyPrice,
+                maintenanceNotes,
                 tank
         );
 
@@ -122,14 +136,23 @@ public class App {
     public static void viewAllAccounts() {
         System.out.println("\n--- All Customer Accounts ---");
 
-        ArrayList<CustomerAccount> accounts = dao.getAllCustomerAccounts();
+        ArrayList<CustomerAccount> customerAccounts = dao.getAllCustomerAccounts();
 
-        if (accounts.isEmpty()) {
+        if (customerAccounts.isEmpty()) {
             System.out.println("No customer accounts found.");
             return;
         }
 
-        // Polymorphism is still demonstrated because CustomerAccount extends Account.
+        /*
+         This demonstrates polymorphism.
+         CustomerAccount objects are being stored and processed as Account objects.
+        */
+        ArrayList<Account> accounts = new ArrayList<>();
+
+        for (CustomerAccount customerAccount : customerAccounts) {
+            accounts.add(customerAccount);
+        }
+
         for (Account account : accounts) {
             System.out.println("\n-----------------------------");
             System.out.println(account.getSummary());
@@ -141,29 +164,61 @@ public class App {
         System.out.print("Enter customer name to search: ");
         String searchName = input.nextLine();
 
-        ArrayList<CustomerAccount> accounts = dao.searchCustomerAccountsByName(searchName);
+        ArrayList<CustomerAccount> customerAccounts = dao.searchCustomerAccountsByName(searchName);
 
-        if (accounts.isEmpty()) {
+        if (customerAccounts.isEmpty()) {
             System.out.println("No account found with that customer name.");
             return;
         }
 
-        for (CustomerAccount account : accounts) {
+        /*
+         This also demonstrates polymorphism.
+         The search results are CustomerAccount objects, but they can be treated as Account objects.
+        */
+        for (Account account : customerAccounts) {
             System.out.println("\nAccount Found:");
             System.out.println(account.getSummary());
         }
     }
 
     public static void updateAccount() {
-        System.out.println("\n--- Update Account Service Hours ---");
+        System.out.println("\n--- Update Customer Account ---");
 
         int accountId = getIntInput("Enter account ID to update: ");
-        double newServiceHours = getDoubleInput("Enter new service hours: ");
 
-        boolean updated = dao.updateServiceHours(accountId, newServiceHours);
+        System.out.print("New Customer Name: ");
+        String newCustomerName = input.nextLine();
+
+        System.out.print("New Phone Number: ");
+        String newPhoneNumber = input.nextLine();
+
+        System.out.print("New Email: ");
+        String newEmail = input.nextLine();
+
+        System.out.print("New Assigned Worker: ");
+        String newAssignedWorker = input.nextLine();
+
+        System.out.print("New Service Frequency: ");
+        String newServiceFrequency = input.nextLine();
+
+        double newMonthlyPrice = getDoubleInput("New Monthly Price: ");
+
+        System.out.print("New Maintenance Notes: ");
+        String newMaintenanceNotes = input.nextLine();
+
+        boolean updated = dao.updateCustomerAccount(
+                accountId,
+                newCustomerName,
+                newPhoneNumber,
+                newEmail,
+                newAssignedWorker,
+                newServiceFrequency,
+                newMonthlyPrice,
+                newMaintenanceNotes
+        );
 
         if (updated) {
-            System.out.println("Account service hours updated successfully.");
+            System.out.println("Customer account updated successfully.");
         } else {
             System.out.println("No account found with that ID.");
         }

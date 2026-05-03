@@ -1,8 +1,10 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
-Stores shared account information for customer accounts.
+SDC330 Course Project - Aquarium Maintenance App
+
+Abstract parent class that stores shared account information.
+This demonstrates the use of an abstract class.
 */
 
 public abstract class Account {
@@ -45,6 +47,6 @@ public abstract class Account {
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
     public abstract String getSummary();
 }

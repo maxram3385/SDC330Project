@@ -1,12 +1,14 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
+SDC330 Course Project - Aquarium Maintenance App
 
-Defines service-related behavior for aquarium maintenance accounts.
+Interface that defines service-related behavior.
+This demonstrates the use of an interface.
 */
 
 public interface Serviceable {
     double calculateServiceCost();
+
     String getServiceDetails();
 }

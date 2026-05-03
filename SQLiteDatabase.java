@@ -1,7 +1,7 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
+SDC330 Course Project - Aquarium Maintenance App
 
 Creates and returns a connection to the SQLite database.
 */

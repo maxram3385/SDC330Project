@@ -1,9 +1,16 @@
 /*
 Name: Max Ramos
 Date: May 2, 2026
-SDC330 Week 4 Course Project - Database Support
+SDC330 Course Project - Aquarium Maintenance App
 
-Handles database operations for customer accounts and tanks.
+DAO stands for Data Access Object.
+This class handles all SQLite database operations for customer accounts and tanks.
+
+It supports:
+- Create
+- Read
+- Update
+- Delete
 */
 
 import java.sql.Connection;
@@ -21,27 +28,27 @@ public class CustomerAccountDAO {
     }
 
     public void createTables() {
-        String createTanksTable = """
-                CREATE TABLE IF NOT EXISTS tanks (
-                    tank_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    tank_type TEXT NOT NULL,
-                    tank_size REAL NOT NULL
-                );
-                """;
+        String createTanksTable =
+                "CREATE TABLE IF NOT EXISTS Tanks (" +
+                        "tank_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "tank_type TEXT NOT NULL, " +
+                        "tank_size REAL NOT NULL, " +
+                        "water_type TEXT" +
+                        ");";
 
-        String createCustomerAccountsTable = """
-                CREATE TABLE IF NOT EXISTS customer_accounts (
-                    account_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    customer_name TEXT NOT NULL,
-                    phone_number TEXT,
-                    email TEXT,
-                    assigned_worker TEXT,
-                    service_frequency TEXT,
-                    service_hours REAL,
-                    tank_id INTEGER,
-                    FOREIGN KEY (tank_id) REFERENCES tanks(tank_id)
-                );
-                """;
+        String createCustomerAccountsTable =
+                "CREATE TABLE IF NOT EXISTS CustomerAccounts (" +
+                        "account_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "customer_name TEXT NOT NULL, " +
+                        "phone_number TEXT, " +
+                        "email TEXT, " +
+                        "assigned_worker TEXT, " +
+                        "service_frequency TEXT, " +
+                        "monthly_price REAL, " +
+                        "maintenance_notes TEXT, " +
+                        "tank_id INTEGER, " +
+                        "FOREIGN KEY (tank_id) REFERENCES Tanks(tank_id)" +
+                        ");";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(createTanksTable);
@@ -52,7 +59,7 @@ public class CustomerAccountDAO {
     }
 
     public int getAccountCount() {
-        String sql = "SELECT COUNT(*) AS total FROM customer_accounts";
+        String sql = "SELECT COUNT(*) AS total FROM CustomerAccounts;";
 
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -69,16 +76,13 @@ public class CustomerAccountDAO {
     }
 
     public void insertCustomerAccount(CustomerAccount account) {
-        String insertTankSql = """
-                INSERT INTO tanks (tank_type, tank_size)
-                VALUES (?, ?);
-                """;
+        String insertTankSql =
+                "INSERT INTO Tanks (tank_type, tank_size, water_type) VALUES (?, ?, ?);";
 
-        String insertAccountSql = """
-                INSERT INTO customer_accounts
-                (customer_name, phone_number, email, assigned_worker, service_frequency, service_hours, tank_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?);
-                """;
+        String insertAccountSql =
+                "INSERT INTO CustomerAccounts " +
+                        "(customer_name, phone_number, email, assigned_worker, service_frequency, monthly_price, maintenance_notes, tank_id) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
         try {
             conn.setAutoCommit(false);
@@ -88,6 +92,7 @@ public class CustomerAccountDAO {
             try (PreparedStatement tankStmt = conn.prepareStatement(insertTankSql, Statement.RETURN_GENERATED_KEYS)) {
                 tankStmt.setString(1, account.getTank().getTankType());
                 tankStmt.setDouble(2, account.getTank().getTankSize());
+                tankStmt.setString(3, account.getTank().getWaterType());
                 tankStmt.executeUpdate();
 
                 try (ResultSet generatedKeys = tankStmt.getGeneratedKeys()) {
@@ -103,8 +108,9 @@ public class CustomerAccountDAO {
                 accountStmt.setString(3, account.getEmail());
                 accountStmt.setString(4, account.getAssignedWorker());
                 accountStmt.setString(5, account.getServiceFrequency());
-                accountStmt.setDouble(6, account.getServiceHours());
-                accountStmt.setInt(7, tankId);
+                accountStmt.setDouble(6, account.getMonthlyPrice());
+                accountStmt.setString(7, account.getMaintenanceNotes());
+                accountStmt.setInt(8, tankId);
                 accountStmt.executeUpdate();
             }
 
@@ -132,45 +138,29 @@ public class CustomerAccountDAO {
     public ArrayList<CustomerAccount> getAllCustomerAccounts() {
         ArrayList<CustomerAccount> accounts = new ArrayList<>();
 
-        String sql = """
-                SELECT
-                    ca.account_id,
-                    ca.customer_name,
-                    ca.phone_number,
-                    ca.email,
-                    ca.assigned_worker,
-                    ca.service_frequency,
-                    ca.service_hours,
-                    t.tank_id,
-                    t.tank_type,
-                    t.tank_size
-                FROM customer_accounts ca
-                JOIN tanks t ON ca.tank_id = t.tank_id
-                ORDER BY ca.account_id;
-                """;
+        String sql =
+                "SELECT " +
+                        "ca.account_id, " +
+                        "ca.customer_name, " +
+                        "ca.phone_number, " +
+                        "ca.email, " +
+                        "ca.assigned_worker, " +
+                        "ca.service_frequency, " +
+                        "ca.monthly_price, " +
+                        "ca.maintenance_notes, " +
+                        "t.tank_id, " +
+                        "t.tank_type, " +
+                        "t.tank_size, " +
+                        "t.water_type " +
+                "FROM CustomerAccounts ca " +
+                "JOIN Tanks t ON ca.tank_id = t.tank_id " +
+                "ORDER BY ca.account_id;";
 
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                Tank tank = new Tank(
-                        rs.getInt("tank_id"),
-                        rs.getString("tank_type"),
-                        rs.getDouble("tank_size")
-                );
-
-                CustomerAccount account = new CustomerAccount(
-                        rs.getInt("account_id"),
-                        rs.getString("customer_name"),
-                        rs.getString("phone_number"),
-                        rs.getString("email"),
-                        rs.getString("assigned_worker"),
-                        rs.getString("service_frequency"),
-                        rs.getDouble("service_hours"),
-                        tank
-                );
-
-                accounts.add(account);
+                accounts.add(buildCustomerAccountFromResultSet(rs));
             }
 
         } catch (SQLException e) {
@@ -183,47 +173,31 @@ public class CustomerAccountDAO {
     public ArrayList<CustomerAccount> searchCustomerAccountsByName(String searchName) {
         ArrayList<CustomerAccount> accounts = new ArrayList<>();
 
-        String sql = """
-                SELECT
-                    ca.account_id,
-                    ca.customer_name,
-                    ca.phone_number,
-                    ca.email,
-                    ca.assigned_worker,
-                    ca.service_frequency,
-                    ca.service_hours,
-                    t.tank_id,
-                    t.tank_type,
-                    t.tank_size
-                FROM customer_accounts ca
-                JOIN tanks t ON ca.tank_id = t.tank_id
-                WHERE ca.customer_name LIKE ?
-                ORDER BY ca.account_id;
-                """;
+        String sql =
+                "SELECT " +
+                        "ca.account_id, " +
+                        "ca.customer_name, " +
+                        "ca.phone_number, " +
+                        "ca.email, " +
+                        "ca.assigned_worker, " +
+                        "ca.service_frequency, " +
+                        "ca.monthly_price, " +
+                        "ca.maintenance_notes, " +
+                        "t.tank_id, " +
+                        "t.tank_type, " +
+                        "t.tank_size, " +
+                        "t.water_type " +
+                "FROM CustomerAccounts ca " +
+                "JOIN Tanks t ON ca.tank_id = t.tank_id " +
+                "WHERE ca.customer_name LIKE ? " +
+                "ORDER BY ca.account_id;";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%" + searchName + "%");
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Tank tank = new Tank(
-                            rs.getInt("tank_id"),
-                            rs.getString("tank_type"),
-                            rs.getDouble("tank_size")
-                    );
-
-                    CustomerAccount account = new CustomerAccount(
-                            rs.getInt("account_id"),
-                            rs.getString("customer_name"),
-                            rs.getString("phone_number"),
-                            rs.getString("email"),
-                            rs.getString("assigned_worker"),
-                            rs.getString("service_frequency"),
-                            rs.getDouble("service_hours"),
-                            tank
-                    );
-
-                    accounts.add(account);
+                    accounts.add(buildCustomerAccountFromResultSet(rs));
                 }
             }
 
@@ -234,42 +208,49 @@ public class CustomerAccountDAO {
         return accounts;
     }
 
-    public boolean updateServiceHours(int accountId, double newServiceHours) {
-        String sql = """
-                UPDATE customer_accounts
-                SET service_hours = ?
-                WHERE account_id = ?;
-                """;
+    public boolean updateCustomerAccount(int accountId, String newCustomerName, String newPhoneNumber,
+                                         String newEmail, String newAssignedWorker,
+                                         String newServiceFrequency, double newMonthlyPrice,
+                                         String newMaintenanceNotes) {
+        String sql =
+                "UPDATE CustomerAccounts " +
+                        "SET customer_name = ?, " +
+                        "phone_number = ?, " +
+                        "email = ?, " +
+                        "assigned_worker = ?, " +
+                        "service_frequency = ?, " +
+                        "monthly_price = ?, " +
+                        "maintenance_notes = ? " +
+                        "WHERE account_id = ?;";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setDouble(1, newServiceHours);
-            stmt.setInt(2, accountId);
+            stmt.setString(1, newCustomerName);
+            stmt.setString(2, newPhoneNumber);
+            stmt.setString(3, newEmail);
+            stmt.setString(4, newAssignedWorker);
+            stmt.setString(5, newServiceFrequency);
+            stmt.setDouble(6, newMonthlyPrice);
+            stmt.setString(7, newMaintenanceNotes);
+            stmt.setInt(8, accountId);
 
             int rowsUpdated = stmt.executeUpdate();
             return rowsUpdated > 0;
 
         } catch (SQLException e) {
-            System.out.println("Error updating service hours: " + e.getMessage());
+            System.out.println("Error updating account: " + e.getMessage());
             return false;
         }
     }
 
     public boolean deleteCustomerAccount(int accountId) {
-        String findTankSql = """
-                SELECT tank_id
-                FROM customer_accounts
-                WHERE account_id = ?;
-                """;
+        String findTankSql =
+                "SELECT tank_id FROM CustomerAccounts WHERE account_id = ?;";
 
-        String deleteAccountSql = """
-                DELETE FROM customer_accounts
-                WHERE account_id = ?;
-                """;
+        String deleteAccountSql =
+                "DELETE FROM CustomerAccounts WHERE account_id = ?;";
 
-        String deleteTankSql = """
-                DELETE FROM tanks
-                WHERE tank_id = ?;
-                """;
+        String deleteTankSql =
+                "DELETE FROM Tanks WHERE tank_id = ?;";
 
         try {
             conn.setAutoCommit(false);
@@ -333,8 +314,9 @@ public class CustomerAccountDAO {
                 "service@smileyshvac.com",
                 "Patrick David",
                 "Monthly",
-                1.5,
-                new Tank(0, "Saltwater Fish Only", 75)
+                150.00,
+                "Check salinity and clean glass.",
+                new Tank(0, "Saltwater Fish Only", 75, "Saltwater")
         ));
 
         insertCustomerAccount(new CustomerAccount(
@@ -344,8 +326,9 @@ public class CustomerAccountDAO {
                 "lyn.primo@email.com",
                 "Max Ramos",
                 "Weekly",
-                2.0,
-                new Tank(0, "Freshwater Planted", 55)
+                220.00,
+                "Trim plants and test nitrate levels.",
+                new Tank(0, "Freshwater Planted", 55, "Freshwater")
         ));
 
         insertCustomerAccount(new CustomerAccount(
@@ -355,8 +338,9 @@ public class CustomerAccountDAO {
                 "michelle.joseph@email.com",
                 "David Schlamee",
                 "Monthly",
-                1.0,
-                new Tank(0, "Freshwater Planted", 40)
+                125.00,
+                "Vacuum substrate and replace filter floss.",
+                new Tank(0, "Freshwater Planted", 40, "Freshwater")
         ));
 
         insertCustomerAccount(new CustomerAccount(
@@ -366,8 +350,9 @@ public class CustomerAccountDAO {
                 "ashlee.marvelle@email.com",
                 "Max Ramos",
                 "Weekly",
-                2.5,
-                new Tank(0, "Saltwater Reef", 90)
+                350.00,
+                "Clean protein skimmer and test alkalinity.",
+                new Tank(0, "Saltwater Reef", 90, "Saltwater")
         ));
 
         insertCustomerAccount(new CustomerAccount(
@@ -377,8 +362,30 @@ public class CustomerAccountDAO {
                 "contact@curecoffeehouse.com",
                 "Patrick David",
                 "Quarterly",
-                3.0,
-                new Tank(0, "Saltwater Reef", 125)
+                400.00,
+                "Large display tank. Clean glass and inspect pumps.",
+                new Tank(0, "Saltwater Reef", 125, "Saltwater")
         ));
+    }
+
+    private CustomerAccount buildCustomerAccountFromResultSet(ResultSet rs) throws SQLException {
+        Tank tank = new Tank(
+                rs.getInt("tank_id"),
+                rs.getString("tank_type"),
+                rs.getDouble("tank_size"),
+                rs.getString("water_type")
+        );
+
+        return new CustomerAccount(
+                rs.getInt("account_id"),
+                rs.getString("customer_name"),
+                rs.getString("phone_number"),
+                rs.getString("email"),
+                rs.getString("assigned_worker"),
+                rs.getString("service_frequency"),
+                rs.getDouble("monthly_price"),
+                rs.getString("maintenance_notes"),
+                tank
+        );
     }
 }
