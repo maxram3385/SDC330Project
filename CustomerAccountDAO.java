@@ -1,6 +1,6 @@
 /*
 Name: Max Ramos
-Date: May 2, 2026
+Date: May 8, 2026
 SDC330 Course Project - Aquarium Maintenance App
 
 DAO stands for Data Access Object.
@@ -211,8 +211,12 @@ public class CustomerAccountDAO {
     public boolean updateCustomerAccount(int accountId, String newCustomerName, String newPhoneNumber,
                                          String newEmail, String newAssignedWorker,
                                          String newServiceFrequency, double newMonthlyPrice,
-                                         String newMaintenanceNotes) {
-        String sql =
+                                         String newMaintenanceNotes, String newTankType,
+                                         double newTankSize, String newWaterType) {
+        String findTankSql =
+                "SELECT tank_id FROM CustomerAccounts WHERE account_id = ?;";
+
+        String updateAccountSql =
                 "UPDATE CustomerAccounts " +
                         "SET customer_name = ?, " +
                         "phone_number = ?, " +
@@ -223,22 +227,70 @@ public class CustomerAccountDAO {
                         "maintenance_notes = ? " +
                         "WHERE account_id = ?;";
 
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, newCustomerName);
-            stmt.setString(2, newPhoneNumber);
-            stmt.setString(3, newEmail);
-            stmt.setString(4, newAssignedWorker);
-            stmt.setString(5, newServiceFrequency);
-            stmt.setDouble(6, newMonthlyPrice);
-            stmt.setString(7, newMaintenanceNotes);
-            stmt.setInt(8, accountId);
+        String updateTankSql =
+                "UPDATE Tanks " +
+                        "SET tank_type = ?, " +
+                        "tank_size = ?, " +
+                        "water_type = ? " +
+                        "WHERE tank_id = ?;";
 
-            int rowsUpdated = stmt.executeUpdate();
-            return rowsUpdated > 0;
+        try {
+            conn.setAutoCommit(false);
+
+            int tankId = -1;
+
+            try (PreparedStatement findTankStmt = conn.prepareStatement(findTankSql)) {
+                findTankStmt.setInt(1, accountId);
+
+                try (ResultSet rs = findTankStmt.executeQuery()) {
+                    if (rs.next()) {
+                        tankId = rs.getInt("tank_id");
+                    } else {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            try (PreparedStatement accountStmt = conn.prepareStatement(updateAccountSql)) {
+                accountStmt.setString(1, newCustomerName);
+                accountStmt.setString(2, newPhoneNumber);
+                accountStmt.setString(3, newEmail);
+                accountStmt.setString(4, newAssignedWorker);
+                accountStmt.setString(5, newServiceFrequency);
+                accountStmt.setDouble(6, newMonthlyPrice);
+                accountStmt.setString(7, newMaintenanceNotes);
+                accountStmt.setInt(8, accountId);
+                accountStmt.executeUpdate();
+            }
+
+            try (PreparedStatement tankStmt = conn.prepareStatement(updateTankSql)) {
+                tankStmt.setString(1, newTankType);
+                tankStmt.setDouble(2, newTankSize);
+                tankStmt.setString(3, newWaterType);
+                tankStmt.setInt(4, tankId);
+                tankStmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
 
         } catch (SQLException e) {
-            System.out.println("Error updating account: " + e.getMessage());
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackError) {
+                System.out.println("Rollback error: " + rollbackError.getMessage());
+            }
+
+            System.out.println("Error updating account and tank: " + e.getMessage());
             return false;
+
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                System.out.println("Auto-commit error: " + e.getMessage());
+            }
         }
     }
 

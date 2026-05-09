@@ -1,6 +1,6 @@
 /*
 Name: Max Ramos
-Date: May 2, 2026
+Date: May 8, 2026
 SDC330 Course Project - Aquarium Maintenance App
 
 Runs the aquarium maintenance console application.
@@ -9,7 +9,7 @@ This program allows the user to:
 - Add customer accounts
 - View all customer accounts
 - Search customer accounts
-- Update customer account information
+- Update customer account and tank information
 - Delete customer accounts
 
 The application uses a SQLite database for CRUD operations.
@@ -80,7 +80,7 @@ public class App {
         System.out.println("1. Add Customer Account");
         System.out.println("2. View All Accounts");
         System.out.println("3. Search Account by Customer Name");
-        System.out.println("4. Update Customer Account Information");
+        System.out.println("4. Update Customer Account and Tank Information");
         System.out.println("5. Delete Account");
         System.out.println("6. Exit");
     }
@@ -143,10 +143,6 @@ public class App {
             return;
         }
 
-        /*
-         This demonstrates polymorphism.
-         CustomerAccount objects are being stored and processed as Account objects.
-        */
         ArrayList<Account> accounts = new ArrayList<>();
 
         for (CustomerAccount customerAccount : customerAccounts) {
@@ -171,10 +167,6 @@ public class App {
             return;
         }
 
-        /*
-         This also demonstrates polymorphism.
-         The search results are CustomerAccount objects, but they can be treated as Account objects.
-        */
         for (Account account : customerAccounts) {
             System.out.println("\nAccount Found:");
             System.out.println(account.getSummary());
@@ -182,7 +174,7 @@ public class App {
     }
 
     public static void updateAccount() {
-        System.out.println("\n--- Update Customer Account ---");
+        System.out.println("\n--- Update Customer Account and Tank Information ---");
 
         int accountId = getIntInput("Enter account ID to update: ");
 
@@ -206,6 +198,14 @@ public class App {
         System.out.print("New Maintenance Notes: ");
         String newMaintenanceNotes = input.nextLine();
 
+        System.out.print("New Tank Type: ");
+        String newTankType = input.nextLine();
+
+        double newTankSize = getDoubleInput("New Tank Size in Gallons: ");
+
+        System.out.print("New Water Type: ");
+        String newWaterType = input.nextLine();
+
         boolean updated = dao.updateCustomerAccount(
                 accountId,
                 newCustomerName,
@@ -214,11 +214,14 @@ public class App {
                 newAssignedWorker,
                 newServiceFrequency,
                 newMonthlyPrice,
-                newMaintenanceNotes
+                newMaintenanceNotes,
+                newTankType,
+                newTankSize,
+                newWaterType
         );
 
         if (updated) {
-            System.out.println("Customer account updated successfully.");
+            System.out.println("Customer account and tank information updated successfully.");
         } else {
             System.out.println("No account found with that ID.");
         }
