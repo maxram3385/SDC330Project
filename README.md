@@ -5,6 +5,9 @@ The Aquarium Maintenance Management App is a Java console application designed t
 
 The application uses a SQLite database to store customer account and tank information. The database includes two related tables, CustomerAccounts and Tanks, connected through a foreign key relationship.
 
+##Link to Video of Application Running: https://youtu.be/AqdM-wQIXU4 
+
+
 ## Project Tasks
 - **Task 1: Set up the development environment**
   - Install and configure Java extensions for VS Code
